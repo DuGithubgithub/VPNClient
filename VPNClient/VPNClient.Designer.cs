@@ -33,6 +33,8 @@
             this.AllUsersPhoneBook = new DotRas.RasPhoneBook(this.components);
             this.Dialer = new DotRas.RasDialer(this.components);
             this.SettingBox = new System.Windows.Forms.GroupBox();
+            this.tVpnName = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.tUserkey = new System.Windows.Forms.TextBox();
             this.lUserKey = new System.Windows.Forms.Label();
             this.tUsername = new System.Windows.Forms.TextBox();
@@ -41,16 +43,15 @@
             this.lServerIP = new System.Windows.Forms.Label();
             this.bConnect = new System.Windows.Forms.Button();
             this.bDisconnect = new System.Windows.Forms.Button();
-            this.bRenew = new System.Windows.Forms.Button();
             this.tMessage = new System.Windows.Forms.TextBox();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.bRemoveVpn = new System.Windows.Forms.Button();
+            this.notifyIcon1 = new System.Windows.Forms.NotifyIcon(this.components);
             this.SettingBox.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
             // Dialer
             // 
-            // TODO: “this.Dialer.CallbackId”的代码生成失败，原因是出现异常“无效的基元类型: System.IntPtr。请考虑使用 CodeObjectCreateExpression。”。
+// TODO: “”的代码生成失败，原因是出现异常“无效的基元类型: System.IntPtr。请考虑使用 CodeObjectCreateExpression。”。
             this.Dialer.Credentials = null;
             this.Dialer.EapOptions = new DotRas.RasEapOptions(false, false, false);
             this.Dialer.Options = new DotRas.RasDialOptions(false, false, false, false, false, false, false, false, false, false);
@@ -60,72 +61,102 @@
             // 
             // SettingBox
             // 
+            this.SettingBox.Controls.Add(this.tVpnName);
+            this.SettingBox.Controls.Add(this.label1);
             this.SettingBox.Controls.Add(this.tUserkey);
             this.SettingBox.Controls.Add(this.lUserKey);
             this.SettingBox.Controls.Add(this.tUsername);
             this.SettingBox.Controls.Add(this.lUsername);
             this.SettingBox.Controls.Add(this.tServerIP);
             this.SettingBox.Controls.Add(this.lServerIP);
-            this.SettingBox.Location = new System.Drawing.Point(12, 100);
+            this.SettingBox.Location = new System.Drawing.Point(24, 42);
+            this.SettingBox.Margin = new System.Windows.Forms.Padding(6);
             this.SettingBox.Name = "SettingBox";
-            this.SettingBox.Size = new System.Drawing.Size(268, 121);
+            this.SettingBox.Padding = new System.Windows.Forms.Padding(6);
+            this.SettingBox.Size = new System.Drawing.Size(536, 297);
             this.SettingBox.TabIndex = 2;
             this.SettingBox.TabStop = false;
             // 
+            // tVpnName
+            // 
+            this.tVpnName.Location = new System.Drawing.Point(166, 46);
+            this.tVpnName.Margin = new System.Windows.Forms.Padding(6);
+            this.tVpnName.Name = "tVpnName";
+            this.tVpnName.Size = new System.Drawing.Size(328, 35);
+            this.tVpnName.TabIndex = 7;
+            this.tVpnName.Text = "VPN Connection";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(24, 54);
+            this.label1.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(130, 24);
+            this.label1.TabIndex = 6;
+            this.label1.Text = "连接名称：";
+            // 
             // tUserkey
             // 
-            this.tUserkey.Location = new System.Drawing.Point(83, 75);
+            this.tUserkey.Location = new System.Drawing.Point(166, 209);
+            this.tUserkey.Margin = new System.Windows.Forms.Padding(6);
             this.tUserkey.Name = "tUserkey";
             this.tUserkey.PasswordChar = '*';
-            this.tUserkey.Size = new System.Drawing.Size(166, 21);
+            this.tUserkey.Size = new System.Drawing.Size(328, 35);
             this.tUserkey.TabIndex = 5;
             // 
             // lUserKey
             // 
             this.lUserKey.AutoSize = true;
-            this.lUserKey.Location = new System.Drawing.Point(12, 79);
+            this.lUserKey.Location = new System.Drawing.Point(24, 217);
+            this.lUserKey.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.lUserKey.Name = "lUserKey";
-            this.lUserKey.Size = new System.Drawing.Size(65, 12);
+            this.lUserKey.Size = new System.Drawing.Size(130, 24);
             this.lUserKey.TabIndex = 4;
             this.lUserKey.Text = "用户密码：";
             // 
             // tUsername
             // 
-            this.tUsername.Location = new System.Drawing.Point(83, 48);
+            this.tUsername.Location = new System.Drawing.Point(166, 155);
+            this.tUsername.Margin = new System.Windows.Forms.Padding(6);
             this.tUsername.Name = "tUsername";
-            this.tUsername.Size = new System.Drawing.Size(166, 21);
+            this.tUsername.Size = new System.Drawing.Size(328, 35);
             this.tUsername.TabIndex = 3;
             // 
             // lUsername
             // 
             this.lUsername.AutoSize = true;
-            this.lUsername.Location = new System.Drawing.Point(12, 52);
+            this.lUsername.Location = new System.Drawing.Point(24, 163);
+            this.lUsername.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.lUsername.Name = "lUsername";
-            this.lUsername.Size = new System.Drawing.Size(65, 12);
+            this.lUsername.Size = new System.Drawing.Size(130, 24);
             this.lUsername.TabIndex = 2;
             this.lUsername.Text = "用户账号：";
             // 
             // tServerIP
             // 
-            this.tServerIP.Location = new System.Drawing.Point(83, 21);
+            this.tServerIP.Location = new System.Drawing.Point(166, 101);
+            this.tServerIP.Margin = new System.Windows.Forms.Padding(6);
             this.tServerIP.Name = "tServerIP";
-            this.tServerIP.Size = new System.Drawing.Size(166, 21);
+            this.tServerIP.Size = new System.Drawing.Size(328, 35);
             this.tServerIP.TabIndex = 1;
             // 
             // lServerIP
             // 
             this.lServerIP.AutoSize = true;
-            this.lServerIP.Location = new System.Drawing.Point(12, 25);
+            this.lServerIP.Location = new System.Drawing.Point(24, 109);
+            this.lServerIP.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.lServerIP.Name = "lServerIP";
-            this.lServerIP.Size = new System.Drawing.Size(65, 12);
+            this.lServerIP.Size = new System.Drawing.Size(130, 24);
             this.lServerIP.TabIndex = 0;
             this.lServerIP.Text = "服务地址：";
             // 
             // bConnect
             // 
-            this.bConnect.Location = new System.Drawing.Point(12, 234);
+            this.bConnect.Location = new System.Drawing.Point(48, 372);
+            this.bConnect.Margin = new System.Windows.Forms.Padding(6);
             this.bConnect.Name = "bConnect";
-            this.bConnect.Size = new System.Drawing.Size(75, 23);
+            this.bConnect.Size = new System.Drawing.Size(150, 46);
             this.bConnect.TabIndex = 3;
             this.bConnect.Text = "连接";
             this.bConnect.UseVisualStyleBackColor = true;
@@ -133,58 +164,61 @@
             // 
             // bDisconnect
             // 
-            this.bDisconnect.Location = new System.Drawing.Point(103, 233);
+            this.bDisconnect.Location = new System.Drawing.Point(230, 372);
+            this.bDisconnect.Margin = new System.Windows.Forms.Padding(6);
             this.bDisconnect.Name = "bDisconnect";
-            this.bDisconnect.Size = new System.Drawing.Size(75, 23);
+            this.bDisconnect.Size = new System.Drawing.Size(150, 46);
             this.bDisconnect.TabIndex = 4;
             this.bDisconnect.Text = "断开";
             this.bDisconnect.UseVisualStyleBackColor = true;
             this.bDisconnect.Click += new System.EventHandler(this.bDisconnect_Click);
             // 
-            // bRenew
-            // 
-            this.bRenew.Location = new System.Drawing.Point(196, 234);
-            this.bRenew.Name = "bRenew";
-            this.bRenew.Size = new System.Drawing.Size(75, 23);
-            this.bRenew.TabIndex = 5;
-            this.bRenew.Text = "续费";
-            this.bRenew.UseVisualStyleBackColor = true;
-            this.bRenew.Click += new System.EventHandler(this.bRenew_Click);
-            // 
             // tMessage
             // 
-            this.tMessage.Location = new System.Drawing.Point(12, 274);
+            this.tMessage.Location = new System.Drawing.Point(24, 451);
+            this.tMessage.Margin = new System.Windows.Forms.Padding(6);
             this.tMessage.Multiline = true;
             this.tMessage.Name = "tMessage";
             this.tMessage.ReadOnly = true;
-            this.tMessage.Size = new System.Drawing.Size(268, 87);
+            this.tMessage.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.tMessage.Size = new System.Drawing.Size(536, 170);
             this.tMessage.TabIndex = 6;
             // 
-            // pictureBox1
+            // bRemoveVpn
             // 
-            this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
-            this.pictureBox1.Location = new System.Drawing.Point(13, 13);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(266, 81);
-            this.pictureBox1.TabIndex = 7;
-            this.pictureBox1.TabStop = false;
+            this.bRemoveVpn.Location = new System.Drawing.Point(410, 372);
+            this.bRemoveVpn.Margin = new System.Windows.Forms.Padding(6);
+            this.bRemoveVpn.Name = "bRemoveVpn";
+            this.bRemoveVpn.Size = new System.Drawing.Size(150, 46);
+            this.bRemoveVpn.TabIndex = 7;
+            this.bRemoveVpn.Text = "清除设置";
+            this.bRemoveVpn.UseVisualStyleBackColor = true;
+            this.bRemoveVpn.Click += new System.EventHandler(this.bRemoveVpn_Click);
+            // 
+            // notifyIcon1
+            // 
+            this.notifyIcon1.Icon = ((System.Drawing.Icon)(resources.GetObject("notifyIcon1.Icon")));
+            this.notifyIcon1.Text = "VPN连接器";
+            this.notifyIcon1.DoubleClick += new System.EventHandler(this.notifyIcon1_DoubleClick);
             // 
             // VPNClient
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(291, 380);
-            this.Controls.Add(this.pictureBox1);
+            this.ClientSize = new System.Drawing.Size(582, 655);
+            this.Controls.Add(this.bRemoveVpn);
             this.Controls.Add(this.tMessage);
-            this.Controls.Add(this.bRenew);
             this.Controls.Add(this.bDisconnect);
             this.Controls.Add(this.bConnect);
             this.Controls.Add(this.SettingBox);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Margin = new System.Windows.Forms.Padding(6);
             this.Name = "VPNClient";
-            this.Text = "VPN网络加速器";
+            this.Text = "VPN连接器";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.VPNClient_FormClosing);
+            this.SizeChanged += new System.EventHandler(this.VPNClient_SizeChanged);
             this.SettingBox.ResumeLayout(false);
             this.SettingBox.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -195,7 +229,6 @@
         private System.Windows.Forms.GroupBox SettingBox;
         private System.Windows.Forms.Button bConnect;
         private System.Windows.Forms.Button bDisconnect;
-        private System.Windows.Forms.Button bRenew;
         private System.Windows.Forms.TextBox tMessage;
         private System.Windows.Forms.TextBox tUserkey;
         private System.Windows.Forms.Label lUserKey;
@@ -206,7 +239,11 @@
 
         private DotRas.RasPhoneBook AllUsersPhoneBook;
         private DotRas.RasDialer Dialer;
-        private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.TextBox tVpnName;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button bRemoveVpn;
+        private System.Windows.Forms.NotifyIcon notifyIcon1;
     }
 }
 
