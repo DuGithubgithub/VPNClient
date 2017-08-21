@@ -12,6 +12,8 @@ using System.Configuration;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.IO;
+using Microsoft.Win32;
 
 namespace VPNClient
 {
@@ -30,22 +32,79 @@ namespace VPNClient
         private bool isStopping = false;
         private bool haveStopped = false;
         private ContextMenu notifyiconMnu;
+        private List<string> addRouteArray = new List<string>();
+        private List<string> deleteRouteArray = new List<string>();
+        private System.Windows.Forms.Timer connStatusTimer;
 
         public VPNClient()
         {
             InitializeComponent();
 
+            InitCustomRoute();
+
             // load config setting
-            tVpnName.Text = string.IsNullOrWhiteSpace(GetConfigValue("vpnname")) ? "VPN Connection" : GetConfigValue("vpnname");
-            tServerIP.Text = GetConfigValue("serverip");
-            tUsername.Text = GetConfigValue("username");
-            tUserkey.Text = Encoding.UTF8.GetString(Convert.FromBase64String(GetConfigValue("password")));
+            tVpnName.Text = string.IsNullOrWhiteSpace(ConfigHelper.GetConfigValue("vpnname")) ? "VPN Connection" : ConfigHelper.GetConfigValue("vpnname");
+            tServerIP.Text = ConfigHelper.GetConfigValue("serverip");
+            tUsername.Text = ConfigHelper.GetConfigValue("username");
+            tUserkey.Text = Encoding.UTF8.GetString(Convert.FromBase64String(ConfigHelper.GetConfigValue("password")));
+            chbAutoStart.Checked = Convert.ToBoolean(ConfigHelper.GetConfigValue("autostart") == string.Empty ? "false" : ConfigHelper.GetConfigValue("autostart"));
+
+            InitNotifyicon();
 
             // setting UI
             bDisconnect.Enabled = false;
+
+            if (chbAutoStart.Checked)
+            {
+                BeginConnect();
+                DoMinimized();
+            }
+
+            connStatusTimer = new System.Windows.Forms.Timer();
+            connStatusTimer.Interval = 10000;
+            connStatusTimer.Tick += ConnStatusTimer_Tick;
+            connStatusTimer.Start();
+        }
+
+        private void ConnStatusTimer_Tick(object sender, EventArgs e)
+        {
+            if (conn == null)
+            {
+                BeginConnect();
+            }
+        }
+
+        private void InitCustomRoute()
+        {
+            var routeLines = File.ReadAllLines(Path.Combine(Application.StartupPath, "customroute.txt"));
+            if (routeLines.Length > 0)
+            {
+                foreach (var routeStr in routeLines)
+                {
+                    if (routeStr.StartsWith("add"))
+                    {
+                        addRouteArray.Add(routeStr);
+                    }
+
+                    if (routeStr.StartsWith("delete"))
+                    {
+                        deleteRouteArray.Add(routeStr);
+                    }
+                }
+            }
         }
 
         private void bConnect_Click(object sender, EventArgs e)
+        {
+            if (chbAutoStart.Checked)
+            {
+                AddAutoStart();
+            }
+
+            BeginConnect();
+        }
+
+        private void BeginConnect()
         {
             string sServerip = tServerIP.Text;
             string sUsername = tUsername.Text;
@@ -62,7 +121,7 @@ namespace VPNClient
             {
                 this.Dialer.Credentials = new NetworkCredential(sUsername, sPassword);
                 var handle = this.Dialer.DialAsync();
-                this.tMessage.AppendText("正在尝试连接...\r\n");
+                DoMessage("正在尝试连接...");
 
                 // 连接状态监控
                 connWatcher = new RasConnectionWatcher();
@@ -110,7 +169,7 @@ namespace VPNClient
                 }
                 catch (Exception ex)
                 {
-                    tMessage.AppendText(ex.ToString());
+                    DoMessage(ex.ToString());
                 }
             }
         }
@@ -134,73 +193,122 @@ namespace VPNClient
         {
             if (e.Cancelled)
             {
-                this.tMessage.AppendText("连接取消!\r\n");
+                DoMessage("连接取消！");
             }
             else if (e.TimedOut)
             {
-                this.tMessage.AppendText("连接超时!\r\n");
+                DoMessage("连接超时！");
             }
             else if (e.Error != null)
             {
-                this.tMessage.AppendText("请检查网络连接或者账户是否异常.\r\n");
+                DoMessage("请检查网络连接或者账户是否异常！");
             }
             else if (e.Connected)
             {
-                this.tMessage.AppendText("连接成功!\r\n");
-                bConnect.Enabled = false;
-                bDisconnect.Enabled = true;
-                bRemoveVpn.Enabled = false;
-
-                // 当前VPN的IP地址
-                string vpnIP = GetVpnIP();
-
-                var ifIndex = IPHelper.GetAdapterIndex(sEntryId);
-
-                // 添加路由
-                string cmdResult = string.Empty;
-                CMDHelper.RunCmd("route add 10.250.1.0 mask 255.255.255.0 10.250.250.1 if " + ifIndex, out cmdResult);
-                CMDHelper.RunCmd("route add 10.250.2.0 mask 255.255.255.0 10.250.250.1 if " + ifIndex, out cmdResult);
-                CMDHelper.RunCmd("route add 10.250.3.0 mask 255.255.255.0 10.250.250.1 if " + ifIndex, out cmdResult);
-                CMDHelper.RunCmd("route add 10.250.4.0 mask 255.255.255.0 10.250.250.1 if " + ifIndex, out cmdResult);
-                CMDHelper.RunCmd("route add 10.250.5.0 mask 255.255.255.0 10.250.250.1 if " + ifIndex, out cmdResult);
-                CMDHelper.RunCmd("route delete 10.0.0.0", out cmdResult);
-
-                this.tMessage.AppendText("绑定IP:" + vpnIP + "\r\n");
-
-                isStopping = false;
-                haveStopped = false;
+                DoMessage("连接成功！");
+                DoAfterConnected();
             }
 
             if (!e.Connected)
             {
-                this.tMessage.AppendText("连接失败！\r\n");
+                DoMessage("连接失败！");
             }
+        }
+
+        private void DoAfterConnected()
+        {
+            if (bConnect.InvokeRequired)
+            {
+                bConnect.Invoke(new Action(() =>
+                {
+                    bConnect.Enabled = false;
+                }));
+            }
+            else
+            {
+                bConnect.Enabled = false;
+            }
+
+            if (bDisconnect.InvokeRequired)
+            {
+                bDisconnect.Invoke(new Action(() =>
+                {
+                    bDisconnect.Enabled = true;
+                }));
+            }
+            else
+            {
+                bDisconnect.Enabled = true;
+            }
+
+            if (bRemoveVpn.InvokeRequired)
+            {
+                bRemoveVpn.Invoke(new Action(() =>
+                {
+                    bRemoveVpn.Enabled = false;
+                }));
+            }
+            else
+            {
+                bRemoveVpn.Enabled = false;
+            }
+
+            var ipInfo = GetVpnIP();
+
+            // 当前VPN的IP地址
+            string vpnClientIP = string.Empty;
+            string vpnServerIP = string.Empty;
+            if (ipInfo != null)
+            {
+                vpnClientIP = ipInfo.IPAddress.ToString();
+                vpnServerIP = ipInfo.ServerIPAddress.ToString();
+            }
+
+            var ifIndex = IPHelper.GetAdapterIndex(sEntryId);
+
+            // 添加路由
+            string cmdResult = string.Empty;
+
+            if (addRouteArray.Count > 0)
+            {
+                foreach (var addRoute in addRouteArray)
+                {
+                    CMDHelper.RunCmd("route " + addRoute + " " + vpnServerIP + " if " + ifIndex, out cmdResult);
+                }
+            }
+
+            if (deleteRouteArray.Count > 0)
+            {
+                foreach (var deleteRoute in deleteRouteArray)
+                {
+                    CMDHelper.RunCmd("route " + deleteRoute, out cmdResult);
+                }
+            }
+
+            DoMessage("绑定IP:" + vpnClientIP);
+
+            isStopping = false;
+            haveStopped = false;
         }
 
         /// <summary>
         /// 获取当前VPN地址
         /// </summary>
         /// <returns></returns>
-        private string GetVpnIP()
+        private RasIPInfo GetVpnIP()
         {
-            var vpnIP = string.Empty;
+
             foreach (RasConnection connection in RasConnection.GetActiveConnections())
             {
                 if (connection.EntryName == sEntryName)
                 {
                     conn = connection;
-
-                    RasIPInfo ipAddresses = (RasIPInfo)connection.GetProjectionInfo(RasProjectionType.IP);
-                    if (ipAddresses != null)
-                    {
-                        vpnIP = ipAddresses.IPAddress.ToString();
-                        sEntryId = connection.EntryId.ToString();
-                    }
-                    break;
+                    sEntryId = connection.EntryId.ToString();
+                    return (RasIPInfo)connection.GetProjectionInfo(RasProjectionType.IP);
                 }
             }
 
-            return vpnIP;
+            return null;
         }
 
         private void bDisconnect_Click(object sender, EventArgs e)
@@ -224,7 +332,6 @@ namespace VPNClient
                 {
                     if (conn != null)
                     {
-
                         conn.HangUp();
                     }
                 }
@@ -270,11 +377,18 @@ namespace VPNClient
             }
 
             string cmdResult = string.Empty;
-            CMDHelper.RunCmd("route delete 10.250.1.0", out cmdResult);
-            CMDHelper.RunCmd("route delete 10.250.2.0", out cmdResult);
-            CMDHelper.RunCmd("route delete 10.250.3.0", out cmdResult);
-            CMDHelper.RunCmd("route delete 10.250.4.0", out cmdResult);
-            CMDHelper.RunCmd("route delete 10.250.5.0", out cmdResult);
+
+            if (addRouteArray.Count > 0)
+            {
+                foreach (var addRoute in addRouteArray)
+                {
+                    var addRouteInfo = addRoute.Split(' ');
+                    if (addRouteInfo.Length > 1)
+                    {
+                        CMDHelper.RunCmd("route delete" + addRouteInfo[1], out cmdResult);
+                    }
+                }
+            }
 
             isStopping = false;
             conn = null;
@@ -284,34 +398,19 @@ namespace VPNClient
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
-            SetConfigValue("serverip", tServerIP.Text);
-            SetConfigValue("username", tUsername.Text);
-            SetConfigValue("password", Convert.ToBase64String(Encoding.UTF8.GetBytes(tUserkey.Text)));
-        }
 
-        private static void SetConfigValue(string key, string value)
-        {
-            System.Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            if (config.AppSettings.Settings[key] == null)
+            ConfigHelper.SetConfigValue("vpnname", tVpnName.Text);
+            ConfigHelper.SetConfigValue("serverip", tServerIP.Text);
+            ConfigHelper.SetConfigValue("username", tUsername.Text);
+            ConfigHelper.SetConfigValue("password", Convert.ToBase64String(Encoding.UTF8.GetBytes(tUserkey.Text)));
+            ConfigHelper.SetConfigValue("autostart", chbAutoStart.Checked.ToString().ToLower());
+
+            if (!chbAutoStart.Checked)
             {
-                config.AppSettings.Settings.Add(key, value);
-            }
-            else
-            {
-                config.AppSettings.Settings[key].Value = value;
+                RemoveAutoStart();
             }
 
-            config.Save(ConfigurationSaveMode.Modified);
-            ConfigurationManager.RefreshSection("appSettings");
-        }
-
-        private static string GetConfigValue(string key)
-        {
-            System.Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            if (config.AppSettings.Settings[key] == null)
-                return "";
-            else
-                return config.AppSettings.Settings[key].Value;
+            DoDisconnect();
         }
 
         private void Dialer_Error(object sender, System.IO.ErrorEventArgs e)
@@ -394,28 +493,11 @@ namespace VPNClient
             }
         }
 
-        private void VPNClient_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (conn != null)
-            {
-                MessageBox.Show("请先关闭连接，再退出程序！", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                e.Cancel = true;
-                return;
-            }
-        }
-
         private void VPNClient_SizeChanged(object sender, EventArgs e)
         {
             if (this.WindowState == FormWindowState.Minimized)  //判断是否最小化
             {
-                this.ShowInTaskbar = false;  //不显示在系统任务栏
-                notifyIcon1.Visible = true;  //托盘图标可见
-
-                notifyIcon1.Visible = true;
-                this.Hide();
-                this.ShowInTaskbar = false;
-
-                Initializenotifyicon();
+                DoMinimized();
             }
         }
 
@@ -430,10 +512,18 @@ namespace VPNClient
             }
         }
 
+        private void DoMinimized()
+        {
+            this.ShowInTaskbar = false;  //不显示在系统任务栏
+            this.notifyIcon1.Visible = true;  //托盘图标可见
+            this.WindowState = FormWindowState.Minimized;
+            this.Hide();
+        }
+
         /// <summary>
         /// 最小化到任务栏
         /// </summary>
-        private void Initializenotifyicon()
+        private void InitNotifyicon()
         {
             //定义一个MenuItem数组，并把此数组同时赋值给ContextMenu对象 
             MenuItem[] mnuItms = new MenuItem[3];
@@ -465,16 +555,65 @@ namespace VPNClient
 
         public void ExitSelect(object sender, System.EventArgs e)
         {
-            if (conn != null)
-            {
-                MessageBox.Show("请先断开连接，再退出程序！", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            //if (conn != null)
+            //{
+            //    MessageBox.Show("请先断开连接，再退出程序！", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            //    return;
+            //}
+
+            DoDisconnect();
 
             //隐藏托盘程序中的图标 
             notifyIcon1.Visible = false;
             //关闭系统 
             this.Close();
+        }
+
+        private void AddAutoStart()
+        {
+            SetAutoStart(true);
+        }
+
+        private void RemoveAutoStart()
+        {
+            SetAutoStart(false);
+        }
+
+        private void SetAutoStart(bool autoStart)
+        {
+            try
+            {
+                string appRegName = tVpnName.Text.Replace(" ", "_"); ;
+                RegistryKey reg = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+                if (reg == null)
+                {
+                    reg = Registry.LocalMachine.CreateSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run");
+                }
+
+                //var exeEntry = Path.Combine(Application.StartupPath, "start.vbs");
+                var exeEntry = Application.ExecutablePath;
+
+                //var result = reg.GetValueNames();
+                //reg.DeleteValue("VPN Connection", false);
+
+                if (autoStart)
+                {
+                    if (reg.GetValue(appRegName) == null || reg.GetValue(appRegName).ToString() != exeEntry)
+                    {
+                        reg.SetValue(appRegName, exeEntry);
+                    }
+                }
+                else
+                {
+                    reg.DeleteValue(appRegName, false);
+                }
+
+                reg.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("设置开机启动失败：" + ex.Message);
+            }
         }
     }
 }
