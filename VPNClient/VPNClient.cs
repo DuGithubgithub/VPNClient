@@ -505,11 +505,11 @@ namespace VPNClient
         {
             if (this.WindowState == FormWindowState.Minimized)
             {
-                this.Show();
-                this.ShowInTaskbar = true;
                 this.WindowState = FormWindowState.Normal;
-                notifyIcon1.Visible = false;
             }
+
+            this.Activate();
+            this.ShowInTaskbar = true;
         }
 
         private void DoMinimized()
@@ -517,7 +517,6 @@ namespace VPNClient
             this.ShowInTaskbar = false;  //不显示在系统任务栏
             this.notifyIcon1.Visible = true;  //托盘图标可见
             this.WindowState = FormWindowState.Minimized;
-            this.Hide();
         }
 
         /// <summary>
@@ -530,13 +529,13 @@ namespace VPNClient
             mnuItms[0] = new MenuItem();
             mnuItms[0].Text = "显示窗口";
             mnuItms[0].Click += new System.EventHandler(this.notifyIcon1_showfrom);
+            mnuItms[0].DefaultItem = true;
 
             mnuItms[1] = new MenuItem("-");
 
             mnuItms[2] = new MenuItem();
             mnuItms[2].Text = "退出系统";
             mnuItms[2].Click += new System.EventHandler(this.ExitSelect);
-            mnuItms[2].DefaultItem = true;
 
             notifyiconMnu = new ContextMenu(mnuItms);
             notifyIcon1.ContextMenu = notifyiconMnu;
@@ -546,25 +545,17 @@ namespace VPNClient
         {
             if (this.WindowState == FormWindowState.Minimized)
             {
-                this.Show();
-                this.ShowInTaskbar = true;
                 this.WindowState = FormWindowState.Normal;
-                notifyIcon1.Visible = false;
             }
+
+            this.Activate();
+            this.ShowInTaskbar = true;
         }
 
         public void ExitSelect(object sender, System.EventArgs e)
         {
-            //if (conn != null)
-            //{
-            //    MessageBox.Show("请先断开连接，再退出程序！", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //    return;
-            //}
-
             DoDisconnect();
 
-            //隐藏托盘程序中的图标 
-            notifyIcon1.Visible = false;
             //关闭系统 
             this.Close();
         }
