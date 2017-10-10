@@ -162,7 +162,15 @@ namespace VPNClient
             {
                 try
                 {
-                    RasEntry entry = RasEntry.CreateVpnEntry(sEntryName, sVpnIp, RasVpnStrategy.PptpOnly, RasDevice.GetDeviceByName("(PPTP)", RasDeviceType.Vpn), false);
+                    var deviceList = RasDevice.GetDevices();
+                    var vpnDevice = deviceList.Where(d => d.DeviceType == RasDeviceType.Vpn && d.Name.Contains("(PPTP)")).FirstOrDefault();
+                    if (vpnDevice == null)
+                    {
+                        DoMessage("无可用VPN端口，请尝试执行[netsh winsock reset]进行修复！");
+                        return;
+                    }
+
+                    RasEntry entry = RasEntry.CreateVpnEntry(sEntryName, sVpnIp, RasVpnStrategy.PptpOnly, vpnDevice, false);
                     entry.EncryptionType = RasEncryptionType.Optional;
 
                     this.AllUsersPhoneBook.Entries.Add(entry);
