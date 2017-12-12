@@ -48,6 +48,7 @@ namespace VPNClient
             tUsername.Text = ConfigHelper.GetConfigValue("username");
             tUserkey.Text = Encoding.UTF8.GetString(Convert.FromBase64String(ConfigHelper.GetConfigValue("password")));
             chbAutoStart.Checked = Convert.ToBoolean(ConfigHelper.GetConfigValue("autostart") == string.Empty ? "false" : ConfigHelper.GetConfigValue("autostart"));
+            this.Text = this.Text + " - " + tVpnName.Text;
 
             InitNotifyicon();
 
@@ -112,7 +113,10 @@ namespace VPNClient
             sEntryName = tVpnName.Text;
 
             this.tMessage.Clear();
-            CreateVpnEntry(sServerip);
+            if (!CreateVpnEntry(sServerip))
+            {
+                return;
+            }
 
             this.Dialer.EntryName = sEntryName;
             this.Dialer.PhoneBookPath = RasPhoneBook.GetPhoneBookPath(RasPhoneBookType.AllUsers);
@@ -142,20 +146,26 @@ namespace VPNClient
         /// <param name="e"></param>
         private void ConnWatcher_Disconnected(object sender, RasConnectionEventArgs e)
         {
-            if (!haveStopped)
+            if (e.Connection.EntryName == sEntryName && !haveStopped)
             {
                 haveStopped = true;
                 DoAfterDisconnected();
             }
         }
 
-        private void CreateVpnEntry(string sVpnIp)
+        private bool CreateVpnEntry(string sVpnIp)
         {
             AllUsersPhoneBook.Open();
 
             if (this.AllUsersPhoneBook.Entries.Contains(sEntryName))
             {
-                //todo
+                var ipInfo = GetVpnIP();
+                if (ipInfo != null)
+                {
+                    DoMessage("已经存在到同一个服务器的连接！");
+                    return false;
+                }
+
                 this.AllUsersPhoneBook.Entries[sEntryName].PhoneNumber = sVpnIp;
             }
             else
@@ -167,7 +177,7 @@ namespace VPNClient
                     if (vpnDevice == null)
                     {
                         DoMessage("无可用VPN端口，请尝试执行[netsh winsock reset]进行修复！");
-                        return;
+                        return false;
                     }
 
                     RasEntry entry = RasEntry.CreateVpnEntry(sEntryName, sVpnIp, RasVpnStrategy.PptpOnly, vpnDevice, false);
@@ -180,6 +190,8 @@ namespace VPNClient
                     DoMessage(ex.ToString());
                 }
             }
+
+            return true;
         }
 
         /// <summary>
