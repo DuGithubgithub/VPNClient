@@ -73,6 +73,13 @@ namespace VPNClient
             {
                 BeginConnect();
             }
+
+            if (conn != null && conn.GetConnectionStatus().ConnectionState != RasConnectionState.Connected)
+            {
+                BeginConnect();
+            }
+
+            // TODO:要不要 Ping VPN网关试试？
         }
 
         private void InitCustomRoute()
@@ -112,7 +119,6 @@ namespace VPNClient
             string sPassword = tUserkey.Text;
             sEntryName = tVpnName.Text;
 
-            this.tMessage.Clear();
             if (!CreateVpnEntry(sServerip))
             {
                 return;
@@ -125,7 +131,7 @@ namespace VPNClient
             {
                 this.Dialer.Credentials = new NetworkCredential(sUsername, sPassword);
                 var handle = this.Dialer.DialAsync();
-                DoMessage("正在尝试连接...");
+                DoMessage(string.Format("{0} 正在尝试连接...", DateTime.Now.ToString()));
 
                 // 连接状态监控
                 connWatcher = new RasConnectionWatcher();
@@ -162,7 +168,7 @@ namespace VPNClient
                 var ipInfo = GetVpnIP();
                 if (ipInfo != null)
                 {
-                    DoMessage("已经存在到同一个服务器的连接！");
+                    DoMessage(string.Format("{0} 已经存在到同一个服务器的连接！", DateTime.Now.ToString()));
                     return false;
                 }
 
@@ -176,7 +182,7 @@ namespace VPNClient
                     var vpnDevice = deviceList.Where(d => d.DeviceType == RasDeviceType.Vpn && d.Name.Contains("(PPTP)")).FirstOrDefault();
                     if (vpnDevice == null)
                     {
-                        DoMessage("无可用VPN端口，请尝试执行[netsh winsock reset]进行修复！");
+                        DoMessage(string.Format("{0} 无可用VPN端口，请尝试执行[netsh winsock reset]进行修复！", DateTime.Now.ToString()));
                         return false;
                     }
 
@@ -187,7 +193,7 @@ namespace VPNClient
                 }
                 catch (Exception ex)
                 {
-                    DoMessage(ex.ToString());
+                    DoMessage(string.Format("{0} {1}", DateTime.Now.ToString(), ex.ToString()));
                 }
             }
 
@@ -213,25 +219,25 @@ namespace VPNClient
         {
             if (e.Cancelled)
             {
-                DoMessage("连接取消！");
+                DoMessage(string.Format("{0} 连接取消！", DateTime.Now.ToString()));
             }
             else if (e.TimedOut)
             {
-                DoMessage("连接超时！");
+                DoMessage(string.Format("{0} 连接超时！", DateTime.Now.ToString()));
             }
             else if (e.Error != null)
             {
-                DoMessage("请检查网络连接或者账户是否异常！");
+                DoMessage(string.Format("{0} 请检查网络连接或者账户是否异常！", DateTime.Now.ToString()));
             }
             else if (e.Connected)
             {
-                DoMessage("连接成功！");
+                DoMessage(string.Format("{0} 连接成功！", DateTime.Now.ToString()));
                 DoAfterConnected();
             }
 
             if (!e.Connected)
             {
-                DoMessage("连接失败！");
+                DoMessage(string.Format("{0} 连接失败！", DateTime.Now.ToString()));
             }
         }
 
@@ -305,7 +311,7 @@ namespace VPNClient
                 }
             }
 
-            DoMessage("绑定IP:" + vpnClientIP);
+            DoMessage(string.Format("{0} 绑定IP:{1}", DateTime.Now.ToString(), vpnClientIP));
 
             isStopping = false;
             haveStopped = false;
@@ -342,7 +348,7 @@ namespace VPNClient
             {
                 isStopping = true;
 
-                DoMessage("正在断开连接...");
+                DoMessage(string.Format("{0} 正在断开连接", DateTime.Now.ToString()));
 
                 if (this.Dialer.IsBusy)
                 {
@@ -352,7 +358,8 @@ namespace VPNClient
                 {
                     if (conn != null)
                     {
-                        conn.HangUp();
+                        conn.HangUp(3000);
+                        conn = null;
                     }
                 }
             }
@@ -412,7 +419,7 @@ namespace VPNClient
 
             isStopping = false;
             conn = null;
-            DoMessage("连接已断开");
+            DoMessage(string.Format("{0} 连接已断开", DateTime.Now.ToString()));
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -491,11 +498,11 @@ namespace VPNClient
 
             if (reuslt)
             {
-                DoMessage("移除成功！");
+                DoMessage(string.Format("{0} 移除成功！", DateTime.Now.ToString()));
                 return;
             }
 
-            DoMessage(errMsg);
+            DoMessage(string.Format("{0} {1}", DateTime.Now.ToString(), errMsg));
         }
 
         private void DoMessage(string content)
